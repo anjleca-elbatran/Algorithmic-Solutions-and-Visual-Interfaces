@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>😮‍💨 HUFFMAN 😮‍💨</title>
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css ">
+  <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js "></script>
+  <style>
+   
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f0f8;
+      color: #333333;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+    }
+    li {
+        list-style-type: circle;
+        color: #aa03f7;
+    }
+    .left-panel {
+        width: 50%;
+        padding: 20px;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+    .right-panel {
+        width: 50%;
+        background: linear-gradient(145deg, #fbf8fc, #efe2f0);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    canvas {
+        width: 90%;
+        max-width: 700px;
+        height: auto;
+        border: 2px solid #cccccc;
+        border-radius: 10px;
+        background-color: #e6ddea;
+        display: block;
+        margin: 0 auto;
+    }
+    .zoom-controls button {
+        margin: 0 10px;
+    }
+    .section {
+        background: #e7ddea;
+        padding: 15px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .item-preview {
+        font-size: 16px;
+        font-weight: bold;
+        background: #f7e0fe;
+        border: 1px solid #f8bafd;
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 5px;
+        text-align: center;
+    }
+    textarea {
+        width: 90%;
+        max-width: 100%;
+        min-height: 100px;
+        padding: 12px;
+        font-size: 1em;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        resize: vertical;
+        transition: border-color 0.3s ease;
+    }
+    textarea:focus {
+        border-color: #aa03f7;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(99, 11, 104, 0.2);
+    }
+    button {
+        background-color: #aa03f7;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        font-size: 1em;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    button:hover {
+        background-color: #aa03f7;
+    }
+    canvas {
+      width: 90%;
+      max-width: 700px;
+      height: auto;
+      border: 2px solid #cccccc;
+      border-radius: 10px;
+      background-color: #ffffff;
+      display: block;
+      margin: 0 auto;
+    }
+    .zoom-controls {
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Left Panel -->
+<div class="left-panel">
+  <h2>😮‍💨 HUFFMAN 😮‍💨</h2>
+  <div class="section">
+    <h3>👾 your string pookie? 👾</h3>
+    <textarea id="inputText" placeholder="heree pokieee "></textarea><br/>
+  </div>
+  <div class="section">
+    <h3>🫧 freq table 🫧</h3>
+    <div id="itemList"></div>
+  </div>
+  <button id="runButton">yalla?</button>
+  <div class="section" id="output"></div>
+</div>
+
+<!-- Right Panel - Huffman Tree Animation -->
+<div class="right-panel">
+  <canvas id="treeCanvas" width="600" height="400"></canvas>
+  <div class="zoom-controls" style="text-align:center;margin-top:20px;">
+    <button onclick="zoomIn()">u blind pookie</button>
+    <button onclick="zoomOut()">zoom out fe3lan</button>
+  </div>
+</div>
+
+<py-script>
+import heapq
+from collections import Counter
+import json
+import js
+
+class Node:
+    def __init__(self, char, freq):
+        self.char = char
+        self.freq = freq
+        self.left = None
+        self.right = None
+
+    def __lt__(self, other):
+        if self.freq == other.freq:
+            return (self.char or '') < (other.char or '')
+        return self.freq < other.freq
+
+def build_huffman_tree(text):
+    if not text:
+        return {"error": "Empty input", "success": False}
+    try:
+        freq = dict(Counter(text))
+
+        heap = [Node(char, freq[char]) for char in freq]
+        heapq.heapify(heap)
+
+        while len(heap) > 1:
+            left = heapq.heappop(heap)
+            right = heapq.heappop(heap)
+            merged = Node(None, left.freq + right.freq)
+            merged.left = left
+            merged.right = right
+            heapq.heappush(heap, merged)
+
+        # Assign codes via traversal
+        codes = {}
+        def assign_codes(node, prefix=""):
+            if node:
+                if node.char:
+                    codes[node.char] = prefix
+                assign_codes(node.left, prefix + "0")
+                assign_codes(node.right, prefix + "1")
+
+        assign_codes(heap[0])
+
+        encoded = ''.join(codes[char] for char in text)
+
+        decoded = ""
+        current = heap[0]
+        for bit in encoded:
+            current = current.left if bit == "0" else current.right
+            if current.char:
+                decoded += current.char
+                current = heap[0]
+
+        return {
+            "success": True,
+            "frequency": freq,
+            "codes": codes,
+            "encoded": encoded,
+            "decoded": decoded
+        }
+    except Exception as e:
+        return {"error": str(e), "success": False}
+
+async def run_huffman(text):
+    result = build_huffman_tree(text)
+    return json.dumps(result)
+
+js.window.runHuffmanPy = run_huffman
+</py-script>
+
+<script>
+
+    let currentZoom = 1;
+    const zoomStep = 0.2;
+    const minZoom = 0.4;
+    const maxZoom = 3;
+
+    document.getElementById("runButton").addEventListener("click", async function () {
+        const text = document.getElementById("inputText").value.trim();
+        const output = document.getElementById("output");
+        const itemList = document.getElementById("itemList");
+        output.innerHTML = '<p>Loading Huffman tree via Python... 🪄</p>';
+        itemList.innerHTML = '';
+        if (!text) {
+            output.innerHTML = '<p style="color:red;">try again love 💔</p>';
+            return;
+        }
+
+        try {
+            const resultJson = await window.runHuffmanPy(text);
+            const result = JSON.parse(resultJson);
+            if (!result.success) {
+                throw new Error(result.error || "Python function failed");
+            }
+
+            // Display results
+            output.innerHTML = `
+                <h3>📎 ANSWERS POOKIE 📎</h3>
+                <p><strong>🤖 Encoded Binary:</strong> ${result.encoded}</p>
+                <p><strong>👽 Decoded Text:</strong> ${result.decoded}</p>
+                <h4>😮‍💨 Huffman Codes:</h4>
+                <ul>
+                    ${Object.entries(result.codes).map(([char, code]) => 
+                        `<li><strong>"${char}"</strong>: ${code}</li>`).join('')}
+                </ul>
+            `;
+
+            // Show frequency table
+            itemList.innerHTML = Object.entries(result.frequency)
+                .map(([char, count]) => `
+                    <div class="item-preview">"${char}"    freq is: ${count}</div>
+                `).join('');
+
+            // Build a simplified visual tree from frequency map
+            function buildVisualTree(freqMap) {
+                let nodes = Object.entries(freqMap).map(([char, freq]) => ({ char, freq, left: null, right: null }));
+                while (nodes.length > 1) {
+                    nodes.sort((a, b) => a.freq - b.freq);
+                    const left = nodes.shift();
+                    const right = nodes.shift();
+                    const parent = { char: null, freq: left.freq + right.freq, left, right };
+                    nodes.unshift(parent);
+                }
+                return nodes[0]; // root node (plain JS object)
+            }
+
+            const visualTree = buildVisualTree(result.frequency);
+            window.huffmanRoot = visualTree;
+            drawTree(window.huffmanRoot);
+        } catch (err) {
+            output.innerHTML = `<p style="color:red;">Error: ${err.message} 😢</p>`;
+            console.error("Huffman Error:", err);
+        }
+    });
+
+function drawTree(root) {
+    const canvas = document.getElementById("treeCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Reset all transforms
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Apply zoom and centering
+    ctx.translate(canvas.width / 2, 40); // Start from center top
+    ctx.scale(currentZoom, currentZoom);
+    ctx.translate(-canvas.width / 2, -40); // Align origin back
+
+    const ANIMATION_DELAY = 500;
+
+    function traverse(node, x, y, level, callback) {
+        const spacing = 150 / level;
+
+        setTimeout(() => {
+            // Draw node
+            ctx.beginPath();
+            ctx.arc(x, y, 16, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.fill();
+            ctx.strokeStyle = "#aa03f7";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "#000";
+            ctx.font = "14px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(node.char || "•", x, y + 5);
+
+            let promises = [];
+
+            // Left child
+            if (node.left) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - spacing, y + 60);
+                ctx.strokeStyle = "#555";
+                ctx.stroke();
+                ctx.fillText("0", x - spacing / 2, y + 30);
+
+                promises.push(new Promise(resolve => {
+                    traverse(node.left, x - spacing, y + 60, level + 1, resolve);
+                }));
+            }
+
+            // Right child
+            if (node.right) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + spacing, y + 60);
+                ctx.strokeStyle = "#555";
+                ctx.stroke();
+                ctx.fillText("1", x + spacing / 2, y + 30);
+
+                promises.push(new Promise(resolve => {
+                    traverse(node.right, x + spacing, y + 60, level + 1, resolve);
+                }));
+            }
+
+            Promise.all(promises).then(callback);
+        }, ANIMATION_DELAY);
+    }
+
+    traverse(root, canvas.width / 2, 40, 1, () => {
+        console.log("Tree drawing complete!");
+    });
+  
+     ctx.restore();
+
+}
+
+
+  
+
+
+
+
+   function zoomIn() {
+    if (currentZoom < maxZoom) {
+        currentZoom += zoomStep;
+        if (window.huffmanRoot) drawTree(window.huffmanRoot);
+    }
+}
+
+function zoomOut() {
+    if (currentZoom > minZoom) {
+        currentZoom -= zoomStep;
+        if (window.huffmanRoot) drawTree(window.huffmanRoot);
+    }
+}
+</script>
+</body>
+</html>
