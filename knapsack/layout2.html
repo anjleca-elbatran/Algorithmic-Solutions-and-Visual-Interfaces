@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Knapsack Problem Solver</title>
+  <link rel="stylesheet" href="https://pyscript.net/releases/2025.3.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2025.3.1/core.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      color: #333;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+    }
+
+    .left-panel {
+      width: 50%;
+      padding: 20px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    .right-panel {
+      width: 50%;
+      background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    @keyframes dropIn {
+    0% {
+      transform: translateY(-50px) scale(0.8);
+      opacity: 0;
+    }
+    70% {
+      transform: translateY(10px) scale(1.1);
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .item-drop-animation {
+    animation: dropIn 0.6s ease-out forwards;
+  }
+
+
+
+    /* Main bag container */
+    #bag-container {
+      width: 100%;
+      flex-grow: 1;
+      border: 4px solid #ec2197;
+      border-radius: 0 0 20px 20px;
+      background: #e3cdd8;
+      background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(169, 86, 146, 0.05) 10px,
+        rgba(169, 86, 146, 0.05) 20px
+      );
+      position: relative;
+      overflow-y: auto;
+      padding: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      margin-top: 10px; /* Ensure space between bow and bag */
+      z-index: 1;
+    }
+
+    #bag-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #bag-inner .item-preview {
+      font-size: 16px;
+      font-weight: bold;
+      background: #ffeef2;
+      border: 2px solid #ec4899;
+      color: #701a75;
+      border-radius: 12px;
+      padding: 8px 16px;
+      text-align: center;
+      width: 90%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      animation: popIn 0.3s ease-in-out;
+      margin: 0 auto;
+      display: block;
+    }
+
+
+      @keyframes popIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    h2 {
+      color: #ef2e9c;
+      text-align: center;
+    }
+
+    .section {
+      background: #fdd2e5;
+      padding: 15px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(143, 117, 129, 0.05);
+    }
+
+    .item-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    input[type="number"] {
+      padding: 5px;
+      width: 100px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: #ef2e9c;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    
+    }
+
+    button:hover {
+      background-color: #ef2e9c;
+    }
+
+    .item-preview {
+      background-color: #fee0ee;
+      border: 1px solid #fc78af;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 5px;
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+   .delete-btn {
+  background-color: #de0e61; /* Pure black */
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 25px;
+}
+.delete-btn:hover {
+  background-color: #f475c3; /* Dark gray on hover */
+}
+ /* Dynamic Programming Table Styles */
+    #dp-table {
+      font-family: monospace;
+      text-align: center;
+      width: 100%;
+    }
+
+    #dp-table td {
+      padding: 8px;
+      background-color:#f9fafb;
+      border: 1px solid#e5e7eb;
+    }
+
+    #dp-table .highlight {
+      background-color: #fc73aa;
+      animation: pulse 0.5s ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(249, 3, 126, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(238, 15, 89, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 165, 0, 0); }
+    }
+
+    #dp-table-container {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="left-panel">
+    <h2>🩷✨ Knapsack ✨🩷</h2>
+
+    <div class="section">
+      <label>❣️ knapsack capacity pookie?  
+        <input type="number" id="capacity" min="0" required>
+      </label>
+    </div>
+
+    <div class="section">
+      <h3>🌸 Items</h3>
+      <div class="item-row">
+        <input type="number" id="weight" placeholder="Weight" min="0">
+        <input type="number" id="value" placeholder="Value" min="0"> 
+        <button onclick="addItem()">Add Item</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>📌 current items love</h3>
+      <div id="itemList"></div>
+    </div>
+
+ <!-- Dynamic Programming Table Section -->
+    <div class="section" id="dp-table-container">
+      <h3>🎉 DP table</h3>
+      <table id="dp-table" border="1" style="border-collapse: collapse; width: 100%;"></table>
+    </div>
+
+    <div class="section">
+      <h3> choose your options pookie </h3>
+      <label><input type="radio" name="method" value="dp" checked>🧠 Dynamic Programming</label><br>
+      <label><input type="radio" name="method" value="greedy">🤑 Greedy</label><br>
+      <label><input type="radio" name="method" value="brute">😡 Brute Force</label>
+    </div>
+    <button onclick="solveKnapsack()">Solve</button>
+    <div class="section" id="output"></div>
+    </div>
+
+    <div class="right-panel">
+      <div id="gift-bag-wrapper">
+        <!-- Top flap -->
+        <div id="gift-bag-top"></div>
+        <!-- Ribbons and bow -->
+        <div id="ribbon-left"></div>
+        <div id="ribbon-right"></div>
+        <div id="bow"></div>
+        <!-- Bag Container (holds the items) -->
+        <div id="bag-container">
+          <div id="bag-inner"></div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Python Logic -->
+  <py-script>
+from js import document
+
+def bruteforce_knapsack(capacity, weights, profits, n):
+    if n == 0 or capacity <= 0:
+        return [0, []]
+    if weights[n - 1] > capacity:
+        return bruteforce_knapsack(capacity, weights, profits, n - 1)
+    
+    incl = bruteforce_knapsack(capacity - weights[n - 1], weights, profits, n - 1)
+    excl = bruteforce_knapsack(capacity, weights, profits, n - 1)
+
+    profit_incl = incl[0] + profits[n - 1]
+    items_incl = incl[1] + [n - 1]
+
+    if profit_incl > excl[0]:
+        return [profit_incl, items_incl]
+    else:
+        return [excl[0], excl[1]]
+
+def dp_knapsack(weights, profits, capacity):
+    n = len(weights)
+    dp = [[0]*(capacity+1) for _ in range(n+1)]
+
+    for i in range(1, n+1):
+        for w in range(capacity+1):
+            if weights[i-1] <= w:
+                dp[i][w] = max(profits[i-1] + dp[i-1][w-weights[i-1]], dp[i-1][w])
+            else:
+                dp[i][w] = dp[i-1][w]
+
+    chosen = []
+    remaining = capacity
+    for i in range(n, 0, -1):
+        if dp[i][remaining] != dp[i-1][remaining]:
+            chosen.append(i-1)
+            remaining -= weights[i-1]
+    chosen.sort()
+    return [dp[n][capacity], chosen]
+
+def greedy_knapsack(weights, profits, capacity):
+    indexed_items = list(zip(weights, profits, range(len(weights))))
+    indexed_items.sort(key=lambda x: (x[1]/x[0] if x[0] > 0 else 0), reverse=True)
+    
+    total_profit = 0
+    selected = []
+    remaining = capacity
+
+    for w, p, idx in indexed_items:
+        if w <= 0:
+            continue
+        if w <= remaining:
+            selected.append(idx)
+            total_profit += p
+            remaining -= w
+    
+    return [total_profit, selected]
+
+# Expose functions
+document.bruteforce_knapsack = bruteforce_knapsack
+document.dp_knapsack = dp_knapsack
+document.greedy_knapsack = greedy_knapsack
+  </py-script>
+
+  <script>
+    const items = [];
+
+    function addItem() {
+      const weight = parseInt(document.getElementById('weight').value);
+      const value = parseInt(document.getElementById('value').value);
+
+      if (isNaN(weight) || isNaN(value) || weight <= 0 || value <= 0) {
+        alert("Enter positive weight and value.");
+        return;
+      }
+
+      items.push({ weight, value });
+      updateItemList();
+      document.getElementById('weight').value = '';
+      document.getElementById('value').value = '';
+    }
+
+    function updateItemList() {
+      const list = document.getElementById('itemList');
+      list.innerHTML = '';
+      items.forEach((item, i) => {
+        const div = document.createElement('div');
+        div.className = 'item-preview';
+        div.style.display = 'flex';
+        div.style.justifyContent = 'space-between';
+        div.style.alignItems = 'center';
+        div.style.gap = '10px';
+
+        // Set inner HTML including delete button
+        div.innerHTML = `
+         <span>Item ${i+1}: Weight = ${item.weight}, Value = ${item.value}</span>
+         <button class="delete-btn"> ✶ </button>
+`   ;
+        // Add click handler to remove item
+        div.querySelector('.delete-btn').onclick = function() {
+          items.splice(i, 1); // Remove item from the array
+          updateItemList(); // Update the list
+        };
+
+        list.appendChild(div);
+      });
+    }
+
+    function solveKnapsack() {
+      const capacity = parseInt(document.getElementById('capacity').value);
+      const output = document.getElementById('output');
+      const bagInner = document.getElementById('bag-inner');
+      const dpTableContainer = document.getElementById('dp-table-container');
+      const dpTable = document.getElementById('dp-table');
+      
+      bagInner.innerHTML = '';  // Clear bag
+      output.innerHTML = '';    // Clear output
+      dpTableContainer.style.display = 'none'; // Hide DP table by default
+
+
+      if (isNaN(capacity) || capacity <= 0 || items.length === 0) {
+        output.innerHTML = '<p style="color:red;">try again love 💔</p>';
+        return;
+      }
+
+      const method = document.querySelector('input[name="method"]:checked').value;
+      const weights = items.map(i => i.weight);
+      const profits = items.map(i => i.value);
+
+
+      let result;
+      if (method === 'brute') {
+        result = document.bruteforce_knapsack(capacity, weights, profits, items.length);
+      } else if (method === 'dp') {
+        const n = items.length;
+        const dp = Array.from({ length: n + 1 }, () => Array(capacity + 1).fill(0));
+        dpTable.innerHTML = '';
+
+        // Fill DP table and animate it
+        dpTableContainer.style.display = 'block';
+        for (let i = 0; i <= n; i++) {
+          const row = dpTable.insertRow();
+          for (let w = 0; w <= capacity; w++) {
+            const cell = row.insertCell();
+            cell.textContent = dp[i][w];
+          }
+        }
+
+        // Simulate filling the DP table step-by-step
+        for (let i = 1; i <= n; i++) {
+          for (let w = 0; w <= capacity; w++) {
+            setTimeout(() => {
+              if (weights[i - 1] > w) {
+                dp[i][w] = dp[i - 1][w];
+              } else {
+                dp[i][w] = Math.max(dp[i - 1][w], profits[i - 1] + dp[i - 1][w - weights[i - 1]]);
+              }
+              dpTable.rows[i].cells[w].textContent = dp[i][w];
+              dpTable.rows[i].cells[w].classList.add('highlight');
+              setTimeout(() => dpTable.rows[i].cells[w].classList.remove('highlight'), 500);
+            }, 100 * (i * (capacity + 1) + w));
+          }
+        }
+
+        // Get final result
+        let chosen = [];
+        let remaining = capacity;
+        for (let i = n; i > 0; i--) {
+          if (dp[i][remaining] !== dp[i - 1][remaining]) {
+            chosen.push(i - 1);
+            remaining -= weights[i - 1];
+          }
+        }
+        result = document.dp_knapsack(weights, profits, capacity);
+
+      } else {
+        result = document.greedy_knapsack(weights, profits, capacity);
+      }
+
+
+
+
+      const maxProfit = result[0];
+      const chosenIndexes = result[1];
+
+//ANSWER AHEEEE YA SHAHHOOOODAAAA BAHPOOOOODAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+output.innerHTML += `<p><strong>💵 profit:</strong> ${maxProfit}</p>`;
+
+// Add Time Complexity
+if (method === 'brute') {
+  output.innerHTML += `<p><strong> ⏱️ complexity:</strong> O(2ⁿ)</p>`;
+} else if (method === 'dp') {
+  output.innerHTML += `<p><strong> ⏱️ complexity:</strong> O(n × W)</p>`;
+} else if (method === 'greedy') {
+  output.innerHTML += `<p><strong> ⏱️ complexity:</strong> O(n log n)</p>`;
+}
+
+      
+
+     
+
+      chosenIndexes.forEach((i, index) => {
+        const item = items[i];
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'item-preview';
+        itemDiv.innerHTML = `📍Item: ⚖️ W=${item.weight}, 💰 V=${item.value}`;
+        
+        // Initially hide the item above the bag
+        itemDiv.style.position = 'relative';
+        itemDiv.style.top = '-60px'; // start above the bag
+        itemDiv.style.opacity = '0';
+
+        bagInner.appendChild(itemDiv);
+
+        // Animate after slight delay so items don't all fall at once
+        setTimeout(() => {
+          itemDiv.style.transition = 'all 0.6s ease-out';
+          itemDiv.style.top = '0';
+          itemDiv.style.opacity = '1';
+        }, index * 150); // staggered animation
+      });
+    }
+      // Initial render
+    updateItemList();
+  </script>
+
+</body>
+</html>
